@@ -1,7 +1,7 @@
 FROM python:3.10-slim-buster
 
 # Set the working directory inside the container
-WORKDIR /todo-app
+WORKDIR /heart-rate-app
 
 # Copy requirements first for caching
 COPY requirements.txt requirements.txt

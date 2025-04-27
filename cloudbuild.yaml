@@ -15,14 +15,14 @@ steps:
         "asia-southeast1-docker.pkg.dev/$PROJECT_ID/flask-app/heart-rate-app",
       ]
 
-  # This step will deploy the new container image to cloud run
+  # This step will deploy the new container image to cloud run with increased memory
   - name: "gcr.io/cloud-builders/gcloud"
-    args:
-      [
+    args: [
         "run",
         "deploy",
         "heart-rate-app-service",
         "--image=asia-southeast1-docker.pkg.dev/$PROJECT_ID/flask-app/heart-rate-app",
         "--region=asia-southeast1",
+        "--memory=1Gi", # Increase memory to 1GB
         "--allow-unauthenticated",
       ]
