@@ -4,6 +4,7 @@ from model_service import predict_warning
 from auth_service import register_user, login_user, refresh_auth_token, logout_user, get_user_profile, update_user_profile
 from auth_middleware import token_required
 from flask_cors import CORS
+import os
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes

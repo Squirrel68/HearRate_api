@@ -1,20 +1,32 @@
+import tensorflow as tf  # Add this import
 from tensorflow import keras
 import numpy as np
+import os  # Add this import
 
-gpus = tf.config.experimental.list_physical_devices('GPU')
-for gpu in gpus:
-    tf.config.experimental.set_memory_growth(gpu, True)
+# Set environment variable to reduce TensorFlow logging
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-# Limit memory growth for CPU
-tf.config.threading.set_intra_op_parallelism_threads(1)
-tf.config.threading.set_inter_op_parallelism_threads(1)
+# Initialize model as None for lazy loading
+model = None
 
-# Load model with optimizations
-model = tf.keras.models.load_model('heart_disease_model.h5', compile=False)
+def load_model():
+    global model
+    if model is None:
+        # Configure memory usage
+        tf.config.threading.set_intra_op_parallelism_threads(1)
+        tf.config.threading.set_inter_op_parallelism_threads(1)
+        
+        # Load model only when needed
+        model = tf.keras.models.load_model('heart_disease_model.h5', compile=False)
+    return model
 
 # Predict
 def predict_warning(features):
-
+    # Get model (lazy loading)
+    global model
+    if model is None:
+        model = load_model()
+        
     bpm = features.get('bpm', 0)
     X = np.array([[
         features['age'],
@@ -27,13 +39,10 @@ def predict_warning(features):
         features['alco'],
     ]])
     
-    # Nếu bạn cần chuẩn hóa, phải load scaler thêm
-    # ví dụ: X_scaled = scaler.transform(X)
-    # (Bạn cần lưu `scaler` nữa)
+    # Predict with smaller batch size to reduce memory usage
+    prediction = model.predict(X, batch_size=1)
     
-    prediction = model.predict(X)
-    
-    # Nếu binary, sẽ ra giá trị (0-1), cần round
+    # Return prediction
     if prediction.shape[1] == 1:
         return int(prediction[0][0] > 0.5)
     else:
