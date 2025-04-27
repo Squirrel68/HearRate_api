@@ -11,3 +11,5 @@ pip freeze > requirements.txt
 
 pip install -r requirements.txt
 python app.py
+
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
