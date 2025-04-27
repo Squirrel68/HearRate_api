@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from firebase_service import get_user_heart_data
 from model_service import predict_warning
-from auth_service import register_user, login_user, refresh_auth_token, logout_user, get_user_profile
+from auth_service import register_user, login_user, refresh_auth_token, logout_user, get_user_profile, update_user_profile
 from auth_middleware import token_required
 from flask_cors import CORS
 
@@ -106,6 +106,43 @@ def get_profile(user_id):
         return success_response(response_data, 200)
     else:
         return error_response('Profile not found', 404)
+
+@app.route('/profile', methods=['PUT'])
+@token_required
+def update_profile(user_id):
+    data = request.get_json()
+    
+    # Extract update fields
+    name = data.get('name')
+    email = data.get('email')
+    
+    # Extract profile fields
+    profile = data.get('profile', {})
+    age = profile.get('age')
+    gender = profile.get('gender')
+    height = profile.get('height')
+    weight = profile.get('weight')
+    smoke = profile.get('smoke')
+    alco = profile.get('alco')
+    
+    # Call update function
+    result = update_user_profile(
+        user_id, 
+        name=name,
+        email=email,
+        age=age,
+        gender=gender, 
+        height=height, 
+        weight=weight,
+        smoke=smoke,
+        alco=alco
+    )
+    
+    if result['success']:
+        del result['success']  # Remove success flag as it's redundant now
+        return success_response(result, 200)
+    else:
+        return error_response(result.get('message', 'Update failed'), 400)
 
 @app.route('/realtime-heart', methods=['GET'])
 @token_required

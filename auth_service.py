@@ -217,3 +217,73 @@ def get_user_profile(user_id):
         return user_data.get('profile', {})
     except Exception:
         return None
+
+def update_user_profile(user_id, name=None, email=None, age=None, gender=None, height=None, weight=None, smoke=None, alco=None):
+    """Update user profile in Firebase"""
+    try:
+        # Get a reference to the user
+        user_ref = db.reference(f'users/{user_id}')
+        user_data = user_ref.get()
+        
+        if not user_data:
+            return {"success": False, "message": "User not found"}
+        
+        # Update basic info
+        updates = {}
+        if name is not None:
+            updates['name'] = name
+        if email is not None:
+            # Check if email already exists for another user
+            if email != user_data.get('email'):
+                users_ref = db.reference('users')
+                existing_users = users_ref.order_by_child('email').equal_to(email).get()
+                if existing_users:
+                    return {"success": False, "message": "Email already registered to another user"}
+            updates['email'] = email
+        
+        # Update profile fields
+        profile_updates = {}
+        if age is not None:
+            profile_updates['age'] = age
+        if gender is not None:
+            profile_updates['gender'] = gender
+        if height is not None:
+            profile_updates['height'] = height
+        if weight is not None:
+            profile_updates['weight'] = weight
+        if smoke is not None:
+            profile_updates['smoke'] = smoke
+        if alco is not None:
+            profile_updates['alco'] = alco
+        
+        # Only update profile if there are profile changes
+        if profile_updates:
+            updates['profile'] = {**user_data.get('profile', {}), **profile_updates}
+        
+        # Only perform update if there are changes
+        if updates:
+            user_ref.update(updates)
+            
+            # Get updated data
+            updated_user = user_ref.get()
+            
+            return {
+                "success": True,
+                "message": "User profile updated successfully",
+                "user_id": user_id,
+                "name": updated_user.get('name'),
+                "email": updated_user.get('email'),
+                "profile": updated_user.get('profile', {})
+            }
+        else:
+            return {
+                "success": True,
+                "message": "No changes made",
+                "user_id": user_id,
+                "name": user_data.get('name'),
+                "email": user_data.get('email'),
+                "profile": user_data.get('profile', {})
+            }
+            
+    except Exception as e:
+        return {"success": False, "message": f"Update failed: {str(e)}"}
