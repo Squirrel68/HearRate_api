@@ -1,7 +1,7 @@
-import tensorflow as tf  # Add this import
+import tensorflow as tf  
 from tensorflow import keras
 import numpy as np
-import os  # Add this import
+import os  
 
 # Set environment variable to reduce TensorFlow logging
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
