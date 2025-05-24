@@ -247,14 +247,16 @@ def calculate_calories(user_id):
     weight = user_profile.get('weight', 70)  # kg
     age = user_profile.get('age', 30)  # years
     gender = user_profile.get('gender', 1)  # 1 for male, 0 for female
+    height = user_profile.get('height', 170)  # cm
     
     # Calculate calories burned per minute based on gender
+    # Adjust formula to be more realistic for calories burned during activity
     if gender == 1:  # Male
-        # Calories per minute = (−55.0969 + (0.6309 × Heart Rate) + (0.1988 × Weight) + (0.2017 × Age)) / 4.184
-        calories_per_minute = (-55.0969 + (0.6309 * bpm) + (0.1988 * weight) + (0.2017 * age)) / 4.184
+        # Simplified calculation focusing on heart rate over resting rate
+        calories_per_minute = (0.4 * (bpm - 70) + (0.1 * weight)) / 4.184
     else:  # Female
-        # Calories per minute = (−20.4022 + (0.4472 × Heart Rate) - (0.1263 × Weight) + (0.074 × Age)) / 4.184
-        calories_per_minute = (-20.4022 + (0.4472 * bpm) - (0.1263 * weight) + (0.074 * age)) / 4.184
+        # Similar simplified formula for women
+        calories_per_minute = (0.35 * (bpm - 70) + (0.08 * weight)) / 4.184
     
     # Ensure calories are not negative
     calories_per_minute = max(0, calories_per_minute)
@@ -262,15 +264,23 @@ def calculate_calories(user_id):
     # Update tracking in Firebase (adding 1 minute)
     tracking_data = update_calories_tracking(user_id, calories_per_minute, 1)
     
+    # Base metabolic rate (BMR) - calories burned at rest per day
+    if gender == 1:  # Male
+        bmr = 88.362 + (13.397 * weight) + (4.799 * height/100) - (5.677 * age)
+    else:  # Female
+        bmr = 447.593 + (9.247 * weight) + (3.098 * height/100) - (4.330 * age)
+    
     # Calculate estimated daily calories
-    # Assuming heart rate would be this level for 16 hours per day (resting 8 hours)
-    estimated_daily_calories = calories_per_minute * 60 * 16
+    # Assume user is active at current rate for 1 hour, and resting for 23 hours
+    estimated_daily_calories = bmr + (calories_per_minute * 60)
     
     response_data = {
         'bpm': bpm,
         'calories_per_minute': round(calories_per_minute, 2),
         'total_calories_today': round(tracking_data.get('total_calories', 0), 2),
         'total_minutes_tracked': tracking_data.get('total_minutes', 0),
+        'active_calories_per_hour': round(calories_per_minute * 60, 2),
+        'bmr_calories_per_day': round(bmr, 2),
         'estimated_daily_calories': round(estimated_daily_calories, 2)
     }
     
