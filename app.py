@@ -4,6 +4,7 @@ from model_service import predict_warning
 from auth_service import register_user, login_user, refresh_auth_token, logout_user, get_user_profile, update_user_profile
 from auth_middleware import token_required
 from flask_cors import CORS
+import os
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -226,4 +227,5 @@ def get_public_heart_data():
     return success_response(response_data, 200)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000, debug=True)
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port, debug=False)
