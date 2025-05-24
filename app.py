@@ -96,12 +96,15 @@ def logout(user_id):
 @app.route('/profile', methods=['GET'])
 @token_required
 def get_profile(user_id):
-    profile = get_user_profile(user_id)
+    # Get user profile with additional user data
+    user_data = get_user_profile(user_id, include_user_data=True)
     
-    if profile:
+    if user_data:
         response_data = {
             'user_id': user_id,
-            'profile': profile
+            'name': user_data.get('name'),
+            'email': user_data.get('email'),
+            'profile': user_data.get('profile', {})
         }
         return success_response(response_data, 200)
     else:

@@ -205,8 +205,17 @@ def verify_access_token(token):
     except jwt.InvalidTokenError:
         return None
 
-def get_user_profile(user_id):
-    """Get user profile data from Firebase"""
+def get_user_profile(user_id, include_user_data=False):
+    """Get user profile data from Firebase
+    
+    Args:
+        user_id: The user ID to retrieve profile for
+        include_user_data: If True, includes the full user data (name, email)
+    
+    Returns:
+        If include_user_data is True: dict with user data and profile
+        Otherwise: just the profile dict or None if user not found
+    """
     try:
         user_ref = db.reference(f'users/{user_id}')
         user_data = user_ref.get()
@@ -214,7 +223,14 @@ def get_user_profile(user_id):
         if not user_data:
             return None
         
-        return user_data.get('profile', {})
+        if include_user_data:
+            return {
+                'name': user_data.get('name'),
+                'email': user_data.get('email'),
+                'profile': user_data.get('profile', {})
+            }
+        else:
+            return user_data.get('profile', {})
     except Exception:
         return None
 
