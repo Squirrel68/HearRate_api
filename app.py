@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from firebase_service import get_user_heart_data
+from firebase_service import get_user_heart_data, update_calories_tracking
 from model_service import predict_warning
 from auth_service import register_user, login_user, refresh_auth_token, logout_user, get_user_profile, update_user_profile
 from auth_middleware import token_required
@@ -224,6 +224,56 @@ def get_public_heart_data():
         'warning': warning
     }
 
+    return success_response(response_data, 200)
+
+@app.route('/calories', methods=['GET'])
+@token_required
+def calculate_calories(user_id):
+    heart_data = get_user_heart_data(user_id)
+    if not heart_data:
+        return error_response('Heart data not found', 404)
+    
+    bpm = heart_data.get('bpm')
+    
+    # Skip calculation if heart rate is 0 (user not wearing device)
+    if bpm == 0:
+        return error_response('Heart rate is zero, user may not be wearing the device', 400)
+    
+    # Get user profile for weight, age, gender
+    user_profile = get_user_profile(user_id)
+    if not user_profile:
+        return error_response('User profile not found', 404)
+    
+    weight = user_profile.get('weight', 70)  # kg
+    age = user_profile.get('age', 30)  # years
+    gender = user_profile.get('gender', 1)  # 1 for male, 0 for female
+    
+    # Calculate calories burned per minute based on gender
+    if gender == 1:  # Male
+        # Calories per minute = (−55.0969 + (0.6309 × Heart Rate) + (0.1988 × Weight) + (0.2017 × Age)) / 4.184
+        calories_per_minute = (-55.0969 + (0.6309 * bpm) + (0.1988 * weight) + (0.2017 * age)) / 4.184
+    else:  # Female
+        # Calories per minute = (−20.4022 + (0.4472 × Heart Rate) - (0.1263 × Weight) + (0.074 × Age)) / 4.184
+        calories_per_minute = (-20.4022 + (0.4472 * bpm) - (0.1263 * weight) + (0.074 * age)) / 4.184
+    
+    # Ensure calories are not negative
+    calories_per_minute = max(0, calories_per_minute)
+    
+    # Update tracking in Firebase (adding 1 minute)
+    tracking_data = update_calories_tracking(user_id, calories_per_minute, 1)
+    
+    # Calculate estimated daily calories
+    # Assuming heart rate would be this level for 16 hours per day (resting 8 hours)
+    estimated_daily_calories = calories_per_minute * 60 * 16
+    
+    response_data = {
+        'bpm': bpm,
+        'calories_per_minute': round(calories_per_minute, 2),
+        'total_calories_today': round(tracking_data.get('total_calories', 0), 2),
+        'total_minutes_tracked': tracking_data.get('total_minutes', 0),
+        'estimated_daily_calories': round(estimated_daily_calories, 2)
+    }
+    
     return success_response(response_data, 200)
 
 if __name__ == '__main__':
